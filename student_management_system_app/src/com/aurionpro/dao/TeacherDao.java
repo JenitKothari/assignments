@@ -107,7 +107,7 @@ public class TeacherDao {
 				if(!teacherExists(teacherId))
 					throw new TeacherNotFoundException(teacherId);
 				preparedStatement = connection.prepareStatement(
-						"select s.subject_name from teacher_subject ts inner join subjects s on ts.subject_id=s.subject_id where ts.teacher_id = ? and s.is_active = 1");
+						"select s.subject_name from teacher_subject ts inner join subjects s on ts.subject_id=s.subject_id where ts.teacher_id = ? and ts.is_active = 1");
 				preparedStatement.setInt(1, teacherId);
 				resultSet = preparedStatement.executeQuery();
 				return resultSet;
