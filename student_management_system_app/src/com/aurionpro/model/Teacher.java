@@ -102,12 +102,6 @@ public class Teacher {
 	
 	public void removeSubject(int subjectId)
 	{
-		for(Integer subject : subjects)
-		{
-			if(subject==subjectId)
-			{
-				subjects.remove(subject);
-			}
-		}
+		subjects.removeIf(id -> id == subjectId);
 	}
 }
