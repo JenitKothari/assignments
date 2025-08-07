@@ -65,17 +65,17 @@ public class StudentController {
  
                     System.out.print("Enter Age: ");
                     int age = scanner.nextInt();
-                    if (age <= 18 || age >= 22) {
-                        System.out.println("Age must be between 18 and 22.");
+                    if (age <= 18) {
+                        System.out.println("Age must be greater than 18.");
                         break;
                     }
  
-                    System.out.print("Enter Percentage: ");
-                    double percentage = scanner.nextDouble();
-                    if (percentage <= 0 || percentage >= 100) {
-                        System.out.println("Percentage must be between 0 and 100.");
-                        break;
-                    }
+//                    System.out.print("Enter Percentage: ");
+//                    double percentage = scanner.nextDouble();
+//                    if (percentage <= 0 || percentage >= 100) {
+//                        System.out.println("Percentage must be between 0 and 100.");
+//                        break;
+//                    }
  
                     scanner.nextLine();  // Consume leftover newline
  
@@ -93,7 +93,7 @@ public class StudentController {
                     student.setRollNo(rollno);
                     student.setStudentName(name);
                     student.setAge(age);
-                    student.setPercentage(percentage);
+//                    student.setPercentage(percentage);
                     student.setCity(city);
                     student.setMobileNo(mobile);
  
