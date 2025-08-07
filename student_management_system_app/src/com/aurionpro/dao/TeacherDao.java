@@ -5,16 +5,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 import com.aurionpro.database.DBConnection;
+import com.aurionpro.exceptions.StudentNotFoundException;
 import com.aurionpro.exceptions.SubjectNotFoundException;
 import com.aurionpro.exceptions.TeacherNotFoundException;
-import com.aurionpro.model.Admin;
 import com.aurionpro.model.Teacher;
 
 public class TeacherDao {
 	private Connection connection;
 	private PreparedStatement preparedStatement;
+	Scanner scanner = new Scanner(System.in);
 	
 	public TeacherDao() {
 		connection = DBConnection.getInstance().getConnection();
@@ -47,7 +51,7 @@ public class TeacherDao {
 					
 					// creating Teacher obj
 					Teacher teacher = new Teacher(teacherId,teacherName,1,teacherCity,teacherMobNo,teacherQualification,teacherExp);
-					Admin.addTeacher(teacher);
+//					Admin.addTeacher(teacher);
 					return true;
 				}
 			} catch (SQLException e) {
@@ -86,8 +90,8 @@ public class TeacherDao {
 				preparedStatement.executeUpdate();
 				
 				// adding subject to the subjects list if teacher
-				Teacher teacher = Admin.getTeacher(teacherId);
-				teacher.addSubject(subjectId);
+//				Teacher teacher = Admin.getTeacher(teacherId);
+//				teacher.addSubject(subjectId);
 				return true;
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -187,7 +191,7 @@ public class TeacherDao {
 				int rowsAffected = preparedStatement.executeUpdate();	
 				
 				// deleting subject from teacher obj
-				Admin.getTeacher(teacherId).removeSubject(subjectId);
+//				Admin.getTeacher(teacherId).removeSubject(subjectId);
 				return rowsAffected;
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -199,8 +203,104 @@ public class TeacherDao {
 			
 			return -1;
 		}
+		
+		// 8. Assign marks to student
+		public int assignMarksToStudent(int studentId) {
+		    int count = 0;
+	 
+		    try {
+		        if (!studentExists(studentId))
+		            throw new StudentNotFoundException(studentId);
+	 
+		        // Get subject list for the student
+		        preparedStatement = connection.prepareStatement(
+		            "SELECT s.subject_id, s.subject_name FROM subjects s " +
+		            "INNER JOIN student_course sc ON s.course_id = sc.course_id " +
+		            "WHERE sc.student_id = ?");
+		        preparedStatement.setInt(1, studentId);
+		        ResultSet resultSet = preparedStatement.executeQuery();
+	 
+		        if (resultSet == null || !resultSet.isBeforeFirst()) {
+		            System.out.println("No Subjects Exist for Student Id : " + studentId);
+		            return -1;
+		        }
+	 
+		        // Temporarily store subject_id and marks for validation
+		        List<Integer> subjectIds = new ArrayList<>();
+		        List<Double> marksList = new ArrayList<>();
+	 
+		        System.out.println("Enter the marks (0-100) for the following subjects for Student Id: " + studentId);
+	 
+		        while (resultSet.next()) {
+		            String subjectName = resultSet.getString("subject_name");
+		            int subjectId = resultSet.getInt("subject_id");
+	 
+		            System.out.print(subjectName + " : ");
+		            double marks = scanner.nextDouble();
+	 
+		            if (marks < 0 || marks > 100) {
+		                System.out.println("Invalid marks entered for subject '" + subjectName + "'. Must be between 0 and 100.");
+		                return -1; // Exit without inserting anything
+		            }
+	 
+		            subjectIds.add(subjectId);
+		            marksList.add(marks);
+		        }
+	 
+		        // If all marks are valid, proceed to insert them in a transaction
+		        connection.setAutoCommit(false);
+		        preparedStatement = connection.prepareStatement(
+		            "INSERT INTO student_all_marks (student_id, subject_id, marks) VALUES (?, ?, ?)");
+	 
+		        for (int i = 0; i < subjectIds.size(); i++) {
+		            preparedStatement.setInt(1, studentId);
+		            preparedStatement.setInt(2, subjectIds.get(i));
+		            preparedStatement.setDouble(3, marksList.get(i));
+		            preparedStatement.addBatch();
+		        }
+	 
+		        int[] insertedRows = preparedStatement.executeBatch();
+		        connection.commit(); // Commit only after all inserts
+	 
+		        count = insertedRows.length;
+	 
+		    } catch (SQLException e) {
+		        try {
+		            connection.rollback(); // Rollback in case of any SQL failure
+		            System.out.println("Database Error: Rolling back all changes.");
+		        } catch (SQLException ex) {
+		            ex.printStackTrace();
+		        }
+		        e.printStackTrace();
+		    } catch (StudentNotFoundException e) {
+		        System.out.println(e.getMessage());
+		    } finally {
+		        try {
+		            connection.setAutoCommit(true); // Restore auto-commit
+		        } catch (SQLException e) {
+		            e.printStackTrace();
+		        }
+		    }
+	 
+		    return count;
+		}
 
-//		 check for Teacher already exist 
+//		 check for Student already exist 
+		private boolean studentExists(int studentId) {
+			String checkQuery = "SELECT * FROM students WHERE student_id = ? and is_active = 1";
+			try {
+				preparedStatement = connection.prepareStatement(checkQuery);
+				preparedStatement.setInt(1, studentId);
+				try (ResultSet rs = preparedStatement.executeQuery()) {
+					return rs.next(); // If any record exists, course already exists
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			return false;
+		}
+
+		//		 check for Teacher already exist 
 		private boolean teacherExists(int teacherId) {
 			String checkQuery = "SELECT * FROM teachers WHERE teacher_id = ? and is_active = 1";
 			try {
@@ -229,6 +329,5 @@ public class TeacherDao {
 			}
 			return false;
 		}
-
 
 }
