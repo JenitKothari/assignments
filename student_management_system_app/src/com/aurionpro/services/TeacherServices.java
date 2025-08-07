@@ -50,4 +50,9 @@ public class TeacherServices {
 				return teacherDao.deleteTeacherSubject(teacherId,subjectId);
 			}
 
+			// 8. Assign marks to student
+			public int assignMarksToStudent(int studentId) {
+				return teacherDao.assignMarksToStudent(studentId);
+			}
+
 }
